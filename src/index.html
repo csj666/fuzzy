@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="fonts/iconfont.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/flexible.js"></script>
+    <link rel="stylesheet" href="js/swiper-4.1.6.min.css">
+    <script src="js/swiper-4.1.6.min.js"></script>
+</head>
+
+<body>
+    <div class="wrapper-pull">
+        <div class="wrapper">
+            <div class="pullend">下拉加载</div>
+            <header>
+                <p class="left">推荐<span class="iconfont icon-xiangxia icon"></span></p>
+                <div class="box">
+                    <input type="text" placeholder="输入商家/商品/商圈">
+                    <b class="iconfont icon-fangdajing icon2"></b>
+                </div>
+                <p class="right"><b class="iconfont icon-icongerenzhongxin-01 icon1"></b><span>我的</span></p>
+            </header>
+            <section>
+                <div class="img">
+                    <img src="img/banner.png" alt="">
+                </div>
+                <div class="swiper-container con">
+                    <div class="swiper-wrapper">
+                        <div class="swiper-slide">
+                            <div class="wrap">
+                                <!-- <dl>
+                                        <dt class="iconfont icon-01"></dt>
+                                        <dd>美食好</dd>
+                             </dl> -->
+                            </div>
+                        </div>
+                        <div class="swiper-slide">
+                            <div class="wrap">
+                                1
+                            </div>
+                        </div>
+                    </div>
+                    <div class="swiper-pagination page">
+                    </div>
+                </div>
+
+                <div class="listbox">
+                    <div class="list">
+                        <div class="present">
+                            猜你喜欢
+                        </div>
+                        <div class="dlbox">
+                            <!-- <div class="dl">
+                        <dl>
+                            <dt><img src="img/1.jpg" alt=""></dt>
+                            <dd>
+                                <div class="top">
+                                    <h1>锥面 一万醉想的面</h1>
+                                    <p class="p">单人套餐</p>
+                                </div>
+
+                                <div class="bottom">
+                                    <p><span>17.5</span><b>元</b></p>
+                                    <span>门市价20元</span>
+                                </div>
+                            </dd>
+                        </dl>
+                        <p class="aside">已销售21666</p>
+                    </div> -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <div class="pullup">上拉加载</div>
+        </div>
+    </div>
+    <script src="js/jquery-1.8.3.min.js"></script>
+    <script src="js/better-scroll.js"></script>
+    <script>
+        var dlbox = document.querySelector(".dlbox");
+        var wrap = document.querySelector(".wrap");
+        var page = 1,
+            newdata;
+        //list
+        $.ajax({
+                url: "/api/list",
+                success: function(data) {
+                    newdata = JSON.parse(data);
+                    Fun(newdata);
+                }
+            })
+            //swiper
+        $.ajax({
+                url: "/api/swi",
+                success: function(data) {
+                    dat(JSON.parse(data));
+                }
+            })
+            //渲染
+        function Fun(data) {
+            var html = "";
+            if (data.cod == "0") {
+                data.msg.forEach(element => {
+                    html += `
+                    <div class="dl">
+                        <dl>
+                            <dt><img src="${element.img}" alt=""></dt>
+                            <dd>
+                                <div class="top">
+                                    <h1>${element.title}</h1>
+                                    <p class="p">单人套餐</p>
+                                </div>
+
+                                <div class="bottom">
+                                    <p><span>${element.mon}</span><b>元</b></p>
+                                    <span>门市价20元</span>
+                                </div>
+                            </dd>
+                        </dl>
+                        <p class="aside">已销售21666</p>
+                    </div>`;
+                });
+                // dlbox.innerHTML = html;
+                $(".dlbox").append(html);
+            }
+        }
+        //渲染轮播图
+        function dat(data) {
+            var html = "";
+            if (data.cod == "0") {
+                $.each(data.msg[0], function(i, pass) {
+                    pass.forEach(element => {
+                        html += `
+                        <dl>
+                        <dt class="${element.msg}"></dt>
+                        <dd>${element.title}</dd>
+                    </dl>`;
+                    });
+                })
+                wrap.innerHTML = html;
+            }
+        }
+        //swiper   轮播图
+        new Swiper(".con", {
+                autoplay: true,
+                pagination: {
+                    el: ".page"
+                }
+            })
+            //上拉刷新
+        var Bscroll = new BScroll(".wrapper-pull", {
+            click: true,
+            probeType: 2,
+            scrollbar: true
+        });
+        Bscroll.on("scroll", function() {
+            if (this.y < this.maxScrollY - 50) {
+                $(".pullup").html("上拉成功...").addClass("flie");
+            } else if (this.y < this.maxScrollY - 10) {
+                $(".pullup").html("上拉加载").removeClass("flie");
+            }
+            if (this.y > 50) {
+                $(".pullend").html("下拉成功....").addClass("flie");
+            } else if (this.y > 10) {
+                $(".pullend").html("下拉加载").removeClass("flie");
+            }
+        })
+        Bscroll.on("scrollEnd", function() {
+            if ($(".pullup").hasClass("flie")) {
+                if (page <= 3) {
+                    page++;
+                    Fun(newdata);
+                    $(".pullup").html("上拉加载").removeClass("flie");
+                }
+                //重新的刷新
+                Bscroll.refresh();
+            } else if ($(".pullend").hasClass("flie")) {
+                $(".dlbox").html("");
+                Fun(newdata);
+                $(".pullend").html("下拉加载").removeClass("flie");
+                page = 1;
+            }
+        })
+    </script>
+</body>
+
+</html>
